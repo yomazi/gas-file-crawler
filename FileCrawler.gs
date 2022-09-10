@@ -1,14 +1,30 @@
 class FileCrawler {
-  _getFilesInFolder(parentFolder) {
-    const fileIterator = parentFolder.getFiles();
-    const filesInFolder = [];
+  _getFilesFromFileIterator(fileIterator, parentFolder) {
+    const files = [];
     while (fileIterator.hasNext()) {
       const file = fileIterator.next();
-
-      filesInFolder.push({ name: file.getName().toLowerCase(), googleDriveFolder: parentFolder, googleDriveFile: file });
+      files.push({ name: file.getName().toLowerCase(), googleDriveFolder: parentFolder, googleDriveFile: file });
     }
 
+    return files;
+  }
+
+  _getFilesInFolder(parentFolder) {
+    const fileIterator = parentFolder.getFiles();
+    const filesInFolder = this._getFilesFromFileIterator(fileIterator, parentFolder);
+
     return filesInFolder;
+  }
+
+  _getFilesFromFolderIterator(folderIterator, allFiles) {
+    let files = allFiles.concat();
+
+    while (folderIterator.hasNext()) {
+      const folder = folderIterator.next();
+      files = this._getAllFiles(folder, files);
+    }
+
+    return files;
   }
 
   _getAllFiles(parentFolder, previousFiles) {
@@ -18,24 +34,18 @@ class FileCrawler {
     let allFiles = previousFiles || [];
 
     const filesInFolder = this._getFilesInFolder(parentFolder);
+    const folderIterator = parentFolder.getFolders();
 
     allFiles = allFiles.concat(filesInFolder);
-
-    const folderIterator = parentFolder.getFolders();
-    while (folderIterator.hasNext()) {
-      const folder = folderIterator.next();
-      
-      allFiles = this._getAllFiles(folder, allFiles);
-    }
+    allFiles = this._getFilesFromFolderIterator(folderIterator, allFiles);
 
     return allFiles;
   }
 
   catalogFilesFrom(rootFolder) {
     const allFiles = this._getAllFiles(rootFolder);
-    SpreadsheetApp.getActiveSpreadsheet().toast("", "done!", 0.01);
-    const sortedFiles = allFiles.sort((a, b) => (a.name > b.name) ? 1 : -1);
+    SpreadsheetApp.getActiveSpreadsheet().toast("", "done!", 1);
 
-    return sortedFiles;
+    return allFiles;
   }
 }
